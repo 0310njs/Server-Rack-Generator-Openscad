@@ -1,17 +1,18 @@
 include <BOSL2/std.scad>
 include <BOSL2/walls.scad>
+include <BOSL2/screws.scad>
 /* [What to generate Settings] */
 //Choose to generate a part of the frame or one of the many smaller parts call accessories.
 show_me=1; // [1: Rack Frame Parts, 2: Rack Accessories]
 //Choose which part of the frame to generate
-rack_frame_part=1; // [1: Rack Feet, 2: Rack Rails, 3: Rack Handles, 4: Rack Panel, 5: Side Panel, 6: Top Plate, 7: Display Rack]
+rack_frame_part=7; // [1: Rack Feet, 2: Rack Rails, 3: Rack Handles, 4: Rack Panel, 5: Side Panel, 6: Top Plate, 7: Display Rack]
 //Choose which type of accessorie to generate
 accessories=1; // [1: Tsprout, 2: Claw, 3: Top Plate Holder, 4: Connection Parts]
 //Currentlly not full supported need more input from users of 6in racks.
 /* [General Rack Settings] */
 rack_width = 254.0; // [ 254.0:10 inch, 152.4:6 inch]
 // Height of the rack in U units, can be a fraction for partial U (e.g. 1.5 for 1U plus half of the next U)
-rack_height = 1.0; // [0.5:0.5:5]
+rack_height = 4.5; // [0.5:0.5:5]
 rack_depth = 2; // [1: Half Depth, 2: Full Depth]
 // Thickness of the front panel (the flat face plate).
 front_plate_thickness = 3.0;
@@ -33,6 +34,8 @@ connection_part = 1; // [1: Connector Plate, 2: Hex Plate, 3: Bolt, 4: Nut]
 doubled = false;
 //Choose to chamfer the corners of the hex plate
 hex_chamfered = false;
+//Choose to generate a bolt that is ready to be printed.
+print_ready_bolt = true;
 
 /* [Hidden] */
 height = 44.45 * rack_height;
@@ -267,6 +270,47 @@ module hex_plate(){
       }
     }
   }
+}
+module bolt(){
+  bolt_len=25.3;
+  head_len=5.4;
+  head_len_ext=head_len-4;
+  bolt_name="M6";
+  shaft_d=5.7;
+    union(){
+      rotate([90,0,0]){
+        translate([0,0,-head_len])
+          screw_head(screw_info(bolt_name,"hex", head_oversize=-.1));
+        translate([0,0,-head_len+head_len_ext])
+          screw_head(screw_info(bolt_name,"hex", head_oversize=-.1));
+        translate([0,0,-6.5/2-head_len])
+          cyl(h=7.5,d=shaft_d,center=true,chamfer=.5);
+        difference(){
+          translate([0,0,-bolt_len+10])
+            trapezoidal_threaded_rod(d=shaft_d,l=20,pitch=2.6,thread_angle=90, thread_depth=.75, end_len2=head_len, blunt_start=false, bevel1=1.5);
+          rotate([-90,0,0])translate([0,21/2+head_len,10/2+shaft_d/2-.15])
+            cube([10,20,10], center=true);
+          rotate([-90,0,0])translate([0,21/2+head_len,-10/2-shaft_d/2+.15])
+            cube([10,20,10], center=true);
+        }
+      }
+    }
+}
+module printed_bolt(){
+
+  difference(){
+    union(){
+      translate([0,.20,0])
+        bolt();
+      translate([0,-.20,0])rotate([0,180,180])
+        bolt();
+      cube([9.5,5,1],center=true);
+    }
+    translate([0,0,-10/2])
+      cube([11,55,10],center=true);
+  }
+}
+module nut(){
 }
 //*******************************Rack Accessories Modules*************************//
 //*******************************Rack Frame Parts Modules*************************//
@@ -648,6 +692,16 @@ module make_connection_parts(){
     hex_plate();
   }
   if(connection_part==3){
+    if(print_ready_bolt){
+      printed_bolt();
+    }else{
+      bolt();
+    }
+  }
+  if(connection_part==4){
+      
+  }
+  if(connection_part==5){
     rack_height1 = 1;
     height1 = rack_height1 * 44.45;
     rack_height2 = 1.5;
@@ -657,10 +711,7 @@ module make_connection_parts(){
       rotate([90,0,180])translate([0,(height2+14+8)/2+height1+14+8,0])
         rack_rails(rack_height2);
       //rotate([90,0,180])translate([0,height1+44.45/2,0])
-          //connector_plate_doubled(1, 2);
-  }
-  if(connection_part==4){
-      
+          //connector_plate_doubled(1, 2); 
   }
 }
 //*******************************Switch Case Modules*************************//
