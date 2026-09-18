@@ -152,12 +152,19 @@ module hook(){
 //***********************************Helper Modules*********************************//
 //*******************************Rack Accessories Modules*************************//
 module tsproot(){
+  side_shift=rack_height % 1?-5:0;
   translate([0,0,plate_width/2])rotate([0,90,0]){
     connector_plate(rack_height, 2);
-    translate([(hook_width/4)+(hook_rounding/2),0,-front_plate_thickness/2]){
+    translate([(hook_width/4)+(hook_rounding/2),side_shift,-front_plate_thickness/2]){
       hook();
       rotate([0,0,180])
         hook();
+    }
+    translate([0,side_shift,0])
+      cuboid([10.5, 7.5, front_plate_thickness],rounding=7.5/2,edges=["Z"]);
+    if(rack_height % 1){
+      translate([0,-height/2+7.5/2,0])
+        cuboid([17, 7.5, front_plate_thickness],rounding=7.5/2,edges=["Z"]);
     }
   }
 }
