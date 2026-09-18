@@ -403,47 +403,51 @@ module rack_feet(){
   }
 }
 module rack_rails(change_rack_height){
+  //used for manual height adjustment.
   rack_height = change_rack_height;
   height = rack_height *  44.45;
-  //added to the length on the rail to account for the half U and a full U?
-  add_half = rack_height % 1 == 0.5 ? 8 : 8;
-  //used for postioning the mounting holes
-  offset_half = rack_height % 1 == 0.5 ? 7 : -3.5;
+  //used to add length to the ends so mounting hole center is 15.875 away from edge
+  U_len_add = rack_height % 1 == 0.5 ? 0 : 2.515;
+  //used to add length to the ends to account for the space needed for half U variants.
+  half_U_len_add = rack_height % 1 == 0.5 ? 8.2037 : 0;
+  //used for postioning the mounting holes on half U variants.
+  offset_half = rack_height % 1 == 0.5 ? 7.0107 : 0;
   
   union(){
     difference(){
       //Main Body
       translate([0,0,6/2])
-        cube([frame_part_width,height+add_half,6],center = true);
+        cube([frame_part_width,height+half_U_len_add+U_len_add*2,6],center = true);
       //Bolt Hole Cuts
-      translate([8,-height/2 - offset_half - add_half/2,4/2])
+      translate([8,-height/2-offset_half-half_U_len_add/2,4/2])
         mount_holes(6, 3, true, rack_height);
-      translate([-8,-height/2 - offset_half - add_half/2,4/2])
+      translate([-8,-height/2-offset_half-half_U_len_add/2,4/2])
         mount_holes(6, 3, true, rack_height);
+      //Extra mounting holes for half U variants.
       if(rack_height % 1 == 0.5){
-        translate([-8,height/2 - 5,4/2])
+        translate([-8,height/2-4.7631,4/2])
           bolt_hole(true);
-        translate([8,height/2 - 5,4/2])
+        translate([8,height/2-4.7631,4/2])
           bolt_hole(true);
       }
     }
     difference(){
       union(){
         //Sides of main body
-        translate([0,height/2 + 7/2 + add_half/2, 16/2])
-          cube([frame_part_width, 7, 16], center = true);
-        translate([0,-height/2 - 7/2 - add_half/2, 16/2])
-          cube([frame_part_width, 7, 16], center = true);
+        translate([0,height/2+7/2+half_U_len_add/2+U_len_add, 16/2])
+          cube([frame_part_width,7,16], center = true);
+        translate([0,-height/2-7/2-half_U_len_add/2-U_len_add, 16/2])
+          cube([frame_part_width,7,16], center = true);
         // Rail connection point bumps
-        translate([8,height/2 + 7 + add_half/2 - e,16/2])rotate([-90,0,0])
+        translate([8,height/2+7+half_U_len_add/2+U_len_add-e,16/2])rotate([-90,0,0])
           rail_connection_bump();
-        translate([-8,height/2 + 7 + add_half/2 - e,16/2])rotate([-90,0,0])
+        translate([-8,height/2+7+half_U_len_add/2+U_len_add-e,16/2])rotate([-90,0,0])
         rail_connection_bump();
       } 
       // Rail connection point bumps
-      translate([8,-height/2 - 7 - add_half/2 - e,16/2])rotate([-90,0,0])
+      translate([8,-height/2-7-half_U_len_add/2-U_len_add-e,16/2])rotate([-90,0,0])
         rail_connection_bump();
-      translate([-8,-height/2 - 7 - add_half/2 - e,16/2])rotate([-90,0,0])
+      translate([-8,-height/2-7-half_U_len_add/2-U_len_add-e,16/2])rotate([-90,0,0])
         rail_connection_bump();
     }
   }
@@ -628,7 +632,7 @@ module display_rack(){
     rack_feet();
   translate([-rack_width/2,0,0])
     rack_feet();
-  //trhe middle
+  //the middle
   rotate([90,0,0])translate([0,height/2+7,0]){
     translate([-rack_width/2,29,-depth/2])
       rack_rails(rack_height);
@@ -671,9 +675,9 @@ module display_rack(){
       connector_plate(1, 2);
   }
   //side and back panels
-  translate([rack_width/2+16+3,0,-((1*44.45)/2)+((top_bottom_height-1)*44.45)+3])rotate([0,90,180])
+  translate([rack_width/2+16+3,0,-((1*44.45)/2)+((top_bottom_height-1)*44.45)+2])rotate([0,90,180])
     side_panel(1);
-  translate([-rack_width/2-16-3,0,-((1*44.45)/2)+((top_bottom_height-1)*44.45)+3])rotate([0,90,0])
+  translate([-rack_width/2-16-3,0,-((1*44.45)/2)+((top_bottom_height-1)*44.45)+2])rotate([0,90,0])
     side_panel(1);
   translate([0,depth/2,-((1*44.45)/2)+((top_bottom_height)*44.45)+2])rotate([0,90,90])
     rack_panel(1);
