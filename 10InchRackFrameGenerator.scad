@@ -234,6 +234,7 @@ module connector_plate_doubled(change_rack_height, hole_type){
 }
 module hex_plate(){
   limit = 12;
+  //makes two cubes with a connecting cube then cuts out bolt holes
   if(doubled){
     difference(){
       union(){
@@ -249,6 +250,7 @@ module hex_plate(){
           }
         cube([4, limit, 4], center = true);
       }
+      //this part makes the double chamered
       if(hex_chamfered){
         translate([-8.5-8,8.5,0])rotate([0,0,45])
           cube([limit,limit,limit],center=true);
@@ -259,9 +261,11 @@ module hex_plate(){
 }else{
     difference(){
       intersection(){
+        //makes a single hex plate
         cube([limit,limit,limit],center=true);
         bolt_hole(false);
       }
+      //this chamfers the single plate
       if(hex_chamfered){
         translate([-8.5,8.5,0])rotate([0,0,45])
           cube([limit,limit,limit],center=true);
@@ -279,38 +283,57 @@ module bolt(){
   shaft_d=5.7;
     union(){
       rotate([90,0,0]){
+        //the head of the screw
         translate([0,0,-head_len])
           screw_head(screw_info(bolt_name,"hex", head_oversize=-.1));
+        //how i make the screw head longer
         translate([0,0,-head_len+head_len_ext])
           screw_head(screw_info(bolt_name,"hex", head_oversize=-.1));
+        //the unthreaded part of the shaft
         translate([0,0,-6.5/2-head_len])
           cyl(h=7.5,d=shaft_d,center=true,chamfer=.5);
         difference(){
+          //the threaded part of the shaft
           translate([0,0,-bolt_len+10])
-            trapezoidal_threaded_rod(d=shaft_d,l=20,pitch=2.6,thread_angle=90, thread_depth=.75, end_len2=head_len, blunt_start=false, bevel1=1.5);
-          rotate([-90,0,0])translate([0,21/2+head_len,10/2+shaft_d/2-.15])
+            trapezoidal_threaded_rod(d=shaft_d,l=20,pitch=2.6,thread_angle=100, thread_depth=.50, end_len2=head_len, blunt_start=false, bevel1=1.5);
+          //how I flattened the sides of the threads.
+          rotate([-90,0,0])translate([0,21/2+head_len,10/2+shaft_d/2-.12])
             cube([10,20,10], center=true);
-          rotate([-90,0,0])translate([0,21/2+head_len,-10/2-shaft_d/2+.15])
+          rotate([-90,0,0])translate([0,21/2+head_len,-10/2-shaft_d/2+.12])
             cube([10,20,10], center=true);
         }
       }
     }
 }
 module printed_bolt(){
-
+  //make two bolts connect them with a cube then cut in half long ways
   difference(){
     union(){
-      translate([0,.20,0])
+      translate([0,.25,0])
         bolt();
-      translate([0,-.20,0])rotate([0,180,180])
+      translate([0,-.25,0])rotate([0,180,180])
         bolt();
-      cube([9.5,5,1],center=true);
+      cube([9.5,5,.8],center=true);
     }
     translate([0,0,-10/2])
       cube([11,55,10],center=true);
   }
 }
 module nut(){
+  nut_len=20;
+  nut_name="M6";
+  shaft_d=6.2;
+  //the nut itself
+  translate([0,0,nut_len/2])
+    trapezoidal_threaded_nut(nutwidth=10,id=shaft_d,l=nut_len,pitch=2.6,thread_angle=110, thread_depth=.50,lead_in2=10); 
+    //Close off the bottom of the nut
+    difference() {
+      translate([0,0,4])rotate([180,0,0])
+        screw_head(screw_info(nut_name,"hex", head_oversize=-.1));
+      translate([0,0,5+2]) 
+        cube(10,center=true);
+    }
+    
 }
 //*******************************Rack Accessories Modules*************************//
 //*******************************Rack Frame Parts Modules*************************//
@@ -591,11 +614,13 @@ module rack_panel(change_rack_height){
   }
 }
 module display_rack(){
-    
+  top_bottom_height=rack_height+1.5;
+  //the bottom  
   translate([rack_width/2,0,0])
     rack_feet();
   translate([-rack_width/2,0,0])
     rack_feet();
+  //trhe middle
   rotate([90,0,0])translate([0,height/2+7,0]){
     translate([-rack_width/2,29,-depth/2])
       rack_rails(rack_height);
@@ -608,13 +633,14 @@ module display_rack(){
     translate([rack_width/2,29,-depth/2])
       rack_rails(rack_height);
   }
+  //the top
   translate([rack_width/2,0,33+height+14])
     rack_handles();
   translate([-rack_width/2,0,33+height+14])rotate([0,0,180])
     rack_handles();
+  //the top plate and holders
   translate([0,0,front_plate_thickness/2+height+73])
     top_plate();
-  
   translate([rack_width/2+8,-depth/2-front_plate_thickness/2,front_plate_thickness/2+29+height+15.5])rotate([-90,0,0]){
     top_plate_holder();
     translate([-rack_width-16,0,0])mirror([1,0,0])
@@ -625,17 +651,25 @@ module display_rack(){
     translate([-rack_width-16,0,0])mirror([1,0,0])
       top_plate_holder();
   }
+  //connection parts
   rotate([90,0,0])translate([0,44.45/2,0]){
     translate([-rack_width/2,3,depth/2+front_plate_thickness/2])
       connector_plate_doubled(1, 2);
     translate([rack_width/2,3,depth/2+front_plate_thickness/2])
       connector_plate_doubled(1, 2);
+    translate([rack_width/2+8,3,-depth/2-front_plate_thickness/2])
+      connector_plate(1, 2);
+    translate([-rack_width/2-8,3,-depth/2-front_plate_thickness/2])
+      connector_plate(1, 2);
   }
-  translate([rack_width/2+16+3,0,height+3])rotate([0,90,180])
+  //side and back panels
+  translate([rack_width/2+16+3,0,-((1*44.45)/2)+((top_bottom_height-1)*44.45)+3])rotate([0,90,180])
     side_panel(1);
-  translate([-rack_width/2-16-3,0,height+3])rotate([0,90,0])
+  translate([-rack_width/2-16-3,0,-((1*44.45)/2)+((top_bottom_height-1)*44.45)+3])rotate([0,90,0])
     side_panel(1);
-  translate([0,depth/2,height+3])rotate([0,90,90])
+  translate([0,depth/2,-((1*44.45)/2)+((top_bottom_height)*44.45)+2])rotate([0,90,90])
+    rack_panel(1);
+  translate([0,depth/2,((1*44.45)/2)+3])rotate([0,90,90])
     rack_panel(1);
 }
 //*******************************Rack Frame Parts Modules*************************//
@@ -699,7 +733,7 @@ module make_connection_parts(){
     }
   }
   if(connection_part==4){
-      
+    nut();
   }
   if(connection_part==5){
     rack_height1 = 1;
