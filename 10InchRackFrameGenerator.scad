@@ -152,6 +152,7 @@ module hook(){
 //***********************************Helper Modules*********************************//
 //*******************************Rack Accessories Modules*************************//
 module tsproot(){
+  rack_height=rack_height > 1?1:rack_height;
   side_shift=rack_height % 1?-5:0;
   translate([0,0,plate_width/2])rotate([0,90,0]){
     connector_plate(rack_height, 2);
