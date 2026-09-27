@@ -145,30 +145,6 @@ module guide_rails(){
     color("red")
     cuboid([3, height, 6], chamfer=1, edges=["ALL"], $fn = 5);
 }
-// Power wire cutouts: Make holes on left and/or right of the component_mount
-module power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, wire_diameter, component_90) {
-    
-    // When the front is solid the switch slides in from the back, so everything
-    // shifts rearward by front_plate_thickness to keep zip ties at the switch's back face.
-    solid_z_offset = front_plate_hole ? 0 : front_plate_thickness;
-    chassis_depth_main = component_depth + zip_tie_cutout_depth + solid_z_offset;
-        
-    mid_y = - component_up_offset; // Midplane of switch opening
-    hole_spacing_x = component_width; // match rack holes
-        
-    if (front_wire_holes == 1 || front_wire_holes == 2){   //make left hole
-        hole_left_x = (-component_width) / 2 - (wire_diameter /5) + component_side_offset;
-        translate([hole_left_x, mid_y, -.1]) {
-            linear_extrude(height = chassis_depth_main + .2) {circle(d=wire_diameter, $fn = 20);}
-            }
-    }
-    if (front_wire_holes == 1 || front_wire_holes == 3){   //make right hole
-        hole_right_x = (component_width) / 2 + (wire_diameter /5) + component_side_offset;
-        translate([hole_right_x, mid_y, -.1]) {
-            linear_extrude(height = chassis_depth_main + .2) {circle(d=wire_diameter, $fn = 20);}
-            }
-    }
-}
 module keystone(){
     // This module makes one cuboid then cuts it with three more and one cut for the triangle.
     
@@ -210,140 +186,31 @@ module keystone(){
                         circle(r=3, $fn=3);
         } 
 }
-module add_standoffs(){
-
-    out_d = 5.5;
-    in_d = 2.9;
-    h =  4;
-    if(PCB_mount){
-      rotate([90,0,0]){
-        translate([14, 67, 0])
-          difference(){
-            cylinder(h=h, d=out_d, center=true); 
-            cylinder(h=h+.1, d=in_d, center=true);
-          }
-       translate([-14, 74, 0])
-          difference(){
-            cylinder(h=h, d=out_d, center=true); 
-            cylinder(h=h+.1, d=in_d, center=true);
-          }
-        translate([14, -73.5, 0])
-          difference(){
-            cylinder(h=h, d=out_d, center=true); 
-            cylinder(h=h+.1, d=in_d, center=true);
-          }
-        translate([-14, -73.5, 0])
-          difference(){
-            cylinder(h=h, d=out_d, center=true); 
-            cylinder(h=h+.1, d=in_d, center=true);
-          }
-      }
+// Power wire cutouts: Make holes on left and/or right of the component_mount
+module cut_power_wire_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, wire_diameter, component_90) {
+    
+    // When the front is solid the switch slides in from the back, so everything
+    // shifts rearward by front_plate_thickness to keep zip ties at the switch's back face.
+    solid_z_offset = front_plate_hole ? 0 : front_plate_thickness;
+    chassis_depth_main = component_depth + zip_tie_cutout_depth + solid_z_offset;
+        
+    mid_y = - component_up_offset; // Midplane of switch opening
+    hole_spacing_x = component_width; // match rack holes
+        
+    if (front_wire_holes == 1 || front_wire_holes == 2){   //make left hole
+        hole_left_x = (-component_width) / 2 - (wire_diameter /5) + component_side_offset;
+        translate([hole_left_x, mid_y, -.1]) {
+            linear_extrude(height = chassis_depth_main + .2) {circle(d=wire_diameter, $fn = 20);}
+            }
+    }
+    if (front_wire_holes == 1 || front_wire_holes == 3){   //make right hole
+        hole_right_x = (component_width) / 2 + (wire_diameter /5) + component_side_offset;
+        translate([hole_right_x, mid_y, -.1]) {
+            linear_extrude(height = chassis_depth_main + .2) {circle(d=wire_diameter, $fn = 20);}
+            }
     }
 }
-module gpu_sheild_cutout(){
-  if(PCB_mount){
-    translate([0, 0, -85.5])
-      cube([40, 40 , 5], center = true);
-      }
-}
-//***********************************Helper Modules*********************************//
-//***********************************Main Building Modules*********************************//
-// front_panel: used to create Rack panel with mounting holes
-module front_panel(){
-    // Create all rack holes
-    module all_rack_holes() {
-        // Rack standard: 3 holes per U, with specific positioning
-        // Each U is 44.45mm, holes are at specific positions within each U
-        hole_spacing_x = (rack_width == 152.4) ? 136.526 : 236.525; // 6 inch : 10 inch rack
-        hole_left_x = (rack_width - hole_spacing_x) / 2;
-        hole_right_x = (rack_width + hole_spacing_x) / 2;
-
-        // 10 inch rack = 10x7mm oval
-        // 6 inch rack = 3.25 x 6.5mm oval
-        slot_len = (rack_width == 152.4) ? 6.5 : 10.0;
-        slot_height = (rack_width == 152.4) ? 3.25 : 7.0;
-
-        // Standard rack hole positions within each 1U (44.45mm) unit:
-        // First hole: 6.35mm from top of U
-        // Second hole: 22.225mm from top of U (middle)
-        // Third hole: 38.1mm from top of U (6.35mm from bottom)
-        u_hole_positions = [6.35, 22.225, 38.1]; // positions within each U
-        
-        // Calculate how many full and partial U units we need to consider
-        max_u = ceil(rack_height); // Include partial U units
-        
-        translate([-rack_width/2, -height/2, 0]){
-            for (side_x = [hole_left_x, hole_right_x]) {
-                for (u = [0:max_u-1]) {
-                    for (hole_pos = u_hole_positions) {
-                        // Calculate hole position from top of entire rack
-                        hole_y = height - (u * 44.45 + hole_pos);
-                        // Always show holes that are at least partially within the rack height
-                        // Always show holes fully inside the rack
-                        fully_inside = (hole_y >= slot_height/2 && hole_y <= height - slot_height/2);
-                        // Show partial holes at edge only if half_heighc v v c  t_holes is true
-                        partially_inside = (hole_y + slot_height/2 > 0 && hole_y - slot_height/2 < height);
-                        show_hole = fully_inside || (half_height_holes && partially_inside && !fully_inside);
-                        if (show_hole) {
-                            translate([side_x, hole_y, front_plate_thickness/2]) {
-                                cuboid([slot_len, slot_height, front_plate_thickness + e*2],rounding=slot_height/2,edges=["Z"], $fn = 40);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // Punch the full keystone footprint through the front face plate
-    module keystone_front_cutout(keystone_jack_group, keystone_jack_side_offset, keystone_jack_up_offset, keystone_jack_num, keystone_jack_I_rotate, keystone_jack_spaceing, keystone_jack_vertical) {
-        
-        // checks if keystones should be made vertically or horazontally
-        keystone_x_spacing = (keystone_jack_vertical) ? 0 : keystone_width + keystone_jack_spaceing;
-        keystone_y_spacing = (keystone_jack_vertical) ? keystone_width + keystone_jack_spaceing : 0;
-        
-        if (keystone_jack_group) { //check if Keystone group enabled
-            translate([0, 0, front_plate_thickness/2]) {
-                for (i = [0:keystone_jack_num-1]) { // loop for making multible jacks
-                        translate([keystone_jack_side_offset + i*(keystone_x_spacing), -keystone_jack_up_offset + i*(keystone_y_spacing), 0])
-                            rotate([0,0,keystone_jack_I_rotate]) // rotate cuts for jacks individually
-                                cube([keystone_width, keystone_height, front_plate_thickness + 2 * tolerance], center=true);
-                }
-            }
-        }
-    }
-    module component_front_cutout(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, component_wire_holes, component_wire_diameter, component_90 ){
-        
-        turn90 = component_90 ? 90 : 0;
-        
-        blank_start = front_plate_hole ? 0 : front_plate_thickness/2;
-        if (component < 4) {           
-            rotate([0,0,turn90])translate([component_side_offset, - component_up_offset, front_plate_thickness/2 + blank_start])
-                cuboid([component_width + tolerance*2, component_height + tolerance*2, front_plate_thickness+1], $fn = 10);
-            if (component_wire_holes < 4){
-                rotate([0,0,turn90])
-                power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_wire_holes,component_wire_diameter, component_90); 
-            }
-        }
-    }
-    // Making the plate
-    //====================================================================================
-    difference(){
-        translate([0, 0, front_plate_thickness/2])
-        
-        cuboid([rack_width, height, front_plate_thickness], rounding=4, edges=["Z"], $fn = 20); 
-        all_rack_holes(); 
-        keystone_front_cutout(keystones1,keystones1_side_offset,keystones1_up_offset,keystones1_num,keystones1_I_rotate,keystones1_spaceing, keystones1_vertical);
-        keystone_front_cutout(keystones2,keystones2_side_offset,keystones2_up_offset,keystones2_num,keystones2_I_rotate,keystones2_spaceing, keystones2_vertical);
-
-        //Cutout window in rack panel for componets. will need to change translates later Translate Mark
-        component_front_cutout(component1, component1_width, component1_height, component1_depth, component1_side_offset, component1_up_offset, component1_wire_holes, component1_wire_diameter, component1_90 );
-        component_front_cutout(component2, component2_width, component2_height, component2_depth, component2_side_offset, component2_up_offset, component2_wire_holes, component2_wire_diameter, component2_90 );
-        component_front_cutout(component3, component3_width, component3_height, component3_depth, component3_side_offset, component3_up_offset, component3_wire_holes, component3_wire_diameter, component3_90 );
-    }
-}
-// component_mount: used to make the soild shape of the holder for each component 
-// with air holes and ziptie modules inside as well.
-module build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset){
+module build_component_body(component_width, component_height, component_depth, component_side_offset, component_up_offset){
   {//Varibles
   chassis_edge_radius = 2.0;
   no_front_cutout = front_plate_hole ? 0 : front_plate_thickness + tolerance;
@@ -438,186 +305,163 @@ module cut_side_windows(component_width, component_height, component_depth, comp
       cube(([component_width + case_thickness*2 + e*2,component_height - frame_offset,component_depth - zip_tie_cutout_depth - frame_offset]), center = true);
   }
 }
- 
-module component_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
-    {//Varibles
-    //6 inch racks (mounts=152.4mm; rails=15.875mm; usable space=120.65mm)
-    //10 inch racks (mounts=254.0mm; rails=15.875mm; usable space=221.5mm)
-    chassis_width = min(component_width + (2 * case_thickness), (rack_width == 152.4) ? 120.65 : 221.5);
-    chassis_edge_radius = 2.0;
 
-    // When the front is solid the switch slides in from the back, so everything
-    // shifts rearward by front_plate_thickness to keep zip ties at the switch's back face.
-    solid_z_offset = front_plate_hole ? 0 : front_plate_thickness + tolerance;
-    chassis_depth_main = component_depth + zip_tie_cutout_depth + solid_z_offset;
-    $fn = 64;
-    
-    turn90 = component_90 ? 90 : 0;
-    }
-    // Create the main body as a separate module
-    module body() {
-        chassis_height = min(component_height + (2 * case_thickness), height);
-        // Chassis body
-        translate([component_side_offset,- component_up_offset, chassis_depth_main/2])
-            cuboid([chassis_width, chassis_height, chassis_depth_main - front_plate_thickness], rounding = chassis_edge_radius, edges=["Z"], $fn = 20);
-    }
-    // component_cutout: used to create cutout with optional lip for component_mount
-    module component_cutout(){
- 
-    // When the front is solid the switch slides in from the back, so everything
-    // shifts rearward by front_plate_thickness to keep zip ties at the switch's back face.
-    no_front_cutout = front_plate_hole ? 0 : front_plate_thickness;
+module add_standoffs(){
 
-        translate([component_side_offset, - component_up_offset,(component_depth + zip_tie_cutout_depth+ 2*tolerance)/2]) 
-            cube([component_width + (2 * tolerance), component_height + (2 * tolerance), component_depth + zip_tie_cutout_depth+ 2*tolerance+ no_front_cutout], center = true);
-    }  
-    
-    module shelf_type(){
-        translate([component_side_offset, - component_height/2 - component_up_offset - e, chassis_depth_main/2])
-        cube([chassis_width - (case_thickness*2-tolerance*2) ,case_thickness*2,chassis_depth_main], center = true);
-    }
-    // Create zip tie holes and indents
-    module zip_tie_features() {
-        // Zip tie holes
-        zip_z = component_depth + solid_z_offset + 2.5;
-        for (i = [0:zip_tie_hole_count - 1]) {
-            x_pos = (component_width)/2 + component_side_offset - (component_width/(zip_tie_hole_count + 1)) * (i+1);
-            translate([x_pos, - component_up_offset, zip_z]) {
-                cube([zip_tie_hole_width, height, zip_tie_hole_length], center = true);
-            }
-        }
-        // Zip tie indents (top and bottom)
-        x_pos = component_side_offset;
-        chassis_height = min(component_height + (2 * case_thickness), height);
-        // Top indent
-        translate([x_pos, (- (chassis_height)/2) + - component_up_offset, zip_z]) {
-            cube([component_width, zip_tie_indent_depth + e, zip_tie_cutout_depth + e], center = true);
-        }
-        // Bottom indent
-        translate([x_pos, ((chassis_height)/2) + - component_up_offset, zip_z]) {
-            cube([component_width, zip_tie_indent_depth + e , zip_tie_cutout_depth + e], center = true);
-        }
-    }
-    // Simplified air holes with staggered honeycomb pattern on all faces
-    module air_holes(){
-        
-      test_hex_fit_Y = (component_height + case_thickness*2) - ( hex_spacing + hex_bottom_frame*2);
-      test_hex_fit_x = (component_width + case_thickness*2) - ( hex_spacing + hex_bottom_frame*2);
-      test_hex_fit_z = (component_depth) - ( hex_spacing + hex_bottom_frame*2);        
-      
-      if(air_holes && test_hex_fit_z > 0){
-        translate([component_side_offset, - component_up_offset, component_depth/2]){
-          if(test_hex_fit_x >= 0){// cut hex hole from top and bottom
-            difference(){         
-                cuboid([component_width + case_thickness*2 + e*2, component_height + case_thickness*2 + e*2, component_depth],rounding=0,edges=["Z"], $fn = 10);
-                hex_panel([component_width + case_thickness*2 + e*2, component_depth, component_height + case_thickness*2 + e*2], hex_strut, hex_spacing, frame=hex_bottom_frame, orient=FRONT, $fn = 10); 
-            }
+    out_d = 5.5;
+    in_d = 2.9;
+    h =  4;
+    if(PCB_mount){
+      rotate([90,0,0]){
+        translate([14, 67, 0])
+          difference(){
+            cylinder(h=h, d=out_d, center=true); 
+            cylinder(h=h+.1, d=in_d, center=true);
           }
-          if (test_hex_fit_Y >= 0){//  cut hex holes form the sides
-            difference(){ 
-              rotate([90,0,0])
-                cuboid([component_width+ case_thickness*2 + e*2, component_depth, component_height + case_thickness*2 + e*2],rounding=0,edges=["Z"], $fn = 10);
-              rotate([90,0,0])
-                hex_panel([ component_height + case_thickness*2 + e*2, component_depth, component_width+ case_thickness*2 + e*2 ], hex_strut, hex_spacing, frame=hex_bottom_frame, orient=LEFT, $fn = 10); 
-                
-            }
+       translate([-14, 74, 0])
+          difference(){
+            cylinder(h=h, d=out_d, center=true); 
+            cylinder(h=h+.1, d=in_d, center=true);
           }
-        }
+        translate([14, -73.5, 0])
+          difference(){
+            cylinder(h=h, d=out_d, center=true); 
+            cylinder(h=h+.1, d=in_d, center=true);
+          }
+        translate([-14, -73.5, 0])
+          difference(){
+            cylinder(h=h, d=out_d, center=true); 
+            cylinder(h=h+.1, d=in_d, center=true);
+          }
       }
     }
-    // Adds a lip to each component
-    module add_lip() {
-        if(front_lip){
-            difference() {
-                translate([component_side_offset, - component_up_offset, 0])
-                    rect_tube(size=[component_width + tolerance*2,component_height + tolerance*2], wall=.6, h=.6, $fn = 10);
-                power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
-            }
-        }
-    }
-    // Complete keystone with embossed triangle
-    module add_stopper(){
-        translate([component_side_offset - component_width/2-2, component_height/2 + case_thickness/2 - component_up_offset, chassis_depth_main-1.5])rotate([90,90,0])
-            wedge([3,stopper_size,stopper_size]);
-        translate([component_side_offset + component_width/2+2, component_height/2 + case_thickness/2 - component_up_offset, chassis_depth_main-4.5])rotate([90,-90,0])
-            wedge([3,stopper_size,stopper_size]);
-    }
-    //Cuts out a the sides of th mount when component_side_windows in true 
-    module cut_side_windows(){
-        if(component_side_windows){
-            frame_offset = 9;
-            translate([component_side_offset, - component_up_offset, component_depth/2])
-                cube(([component_width + case_thickness*2 + e*2,component_height - frame_offset,component_depth - zip_tie_cutout_depth - frame_offset]), center = true);
-        }
-    }
-    module standoffs(){
-        translate([component_side_offset, - component_up_offset + component_height/2 - 1.5, component_depth/2+7])
-        add_standoffs();
-    }
-    module gpucuts(){
-        translate([component_side_offset, - component_up_offset + component_height/2, component_depth/2+7])
-        gpu_sheild_cutout();
-    }
-    // Assembly - boolean structure
-    // ==============================================================
-    if(component < 4){
-        rotate([0,0,turn90])
-        union() {
-            difference() {
-                body();
-                component_cutout();  
-                power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
-                air_holes();
-                cut_side_windows();
-                if(component == 1){
-                    zip_tie_features();
+}
+module gpu_sheild_cutout(){
+  if(PCB_mount){
+    translate([0, 0, -85.5])
+      cube([40, 40 , 5], center = true);
+      }
+}
+
+//***********************************Helper Modules*********************************//
+//***********************************Main Building Modules*********************************//
+// front_panel: used to create Rack panel with mounting holes
+module front_panel(){
+    // Create all rack holes
+    module all_rack_holes() {
+        // Rack standard: 3 holes per U, with specific positioning
+        // Each U is 44.45mm, holes are at specific positions within each U
+        hole_spacing_x = (rack_width == 152.4) ? 136.526 : 236.525; // 6 inch : 10 inch rack
+        hole_left_x = (rack_width - hole_spacing_x) / 2;
+        hole_right_x = (rack_width + hole_spacing_x) / 2;
+
+        // 10 inch rack = 10x7mm oval
+        // 6 inch rack = 3.25 x 6.5mm oval
+        slot_len = (rack_width == 152.4) ? 6.5 : 10.0;
+        slot_height = (rack_width == 152.4) ? 3.25 : 7.0;
+
+        // Standard rack hole positions within each 1U (44.45mm) unit:
+        // First hole: 6.35mm from top of U
+        // Second hole: 22.225mm from top of U (middle)
+        // Third hole: 38.1mm from top of U (6.35mm from bottom)
+        u_hole_positions = [6.35, 22.225, 38.1]; // positions within each U
+        
+        // Calculate how many full and partial U units we need to consider
+        max_u = ceil(rack_height); // Include partial U units
+        
+        translate([-rack_width/2, -height/2, 0]){
+            for (side_x = [hole_left_x, hole_right_x]) {
+                for (u = [0:max_u-1]) {
+                    for (hole_pos = u_hole_positions) {
+                        // Calculate hole position from top of entire rack
+                        hole_y = height - (u * 44.45 + hole_pos);
+                        // Always show holes that are at least partially within the rack height
+                        // Always show holes fully inside the rack
+                        fully_inside = (hole_y >= slot_height/2 && hole_y <= height - slot_height/2);
+                        // Show partial holes at edge only if half_heighc v v c  t_holes is true
+                        partially_inside = (hole_y + slot_height/2 > 0 && hole_y - slot_height/2 < height);
+                        show_hole = fully_inside || (half_height_holes && partially_inside && !fully_inside);
+                        if (show_hole) {
+                            translate([side_x, hole_y, front_plate_thickness/2]) {
+                                cuboid([slot_len, slot_height, front_plate_thickness + e*2],rounding=slot_height/2,edges=["Z"], $fn = 40);
+                            }
+                        }
+                    }
                 }
-                if(component == 2){
-                    shelf_type();
-                    gpucuts();                    
+            }
+        }
+    }
+    // Punch the full keystone footprint through the front face plate
+    module keystone_front_cutout(keystone_jack_group, keystone_jack_side_offset, keystone_jack_up_offset, keystone_jack_num, keystone_jack_I_rotate, keystone_jack_spaceing, keystone_jack_vertical) {
+        
+        // checks if keystones should be made vertically or horazontally
+        keystone_x_spacing = (keystone_jack_vertical) ? 0 : keystone_width + keystone_jack_spaceing;
+        keystone_y_spacing = (keystone_jack_vertical) ? keystone_width + keystone_jack_spaceing : 0;
+        
+        if (keystone_jack_group) { //check if Keystone group enabled
+            translate([0, 0, front_plate_thickness/2]) {
+                for (i = [0:keystone_jack_num-1]) { // loop for making multible jacks
+                        translate([keystone_jack_side_offset + i*(keystone_x_spacing), -keystone_jack_up_offset + i*(keystone_y_spacing), 0])
+                            rotate([0,0,keystone_jack_I_rotate]) // rotate cuts for jacks individually
+                                cube([keystone_width, keystone_height, front_plate_thickness + 2 * tolerance], center=true);
                 }
             }
-            if(component == 1){
-                add_lip(); 
-            }
-            if(component == 2){
-                add_stopper();
-                standoffs();
-            } 
         }
+    }
+    module component_front_cutout(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, component_wire_holes, component_wire_diameter, component_90 ){
+        
+        turn90 = component_90 ? 90 : 0;
+        
+        no_front_cutout = front_plate_hole ? 0 : front_plate_thickness/2;
+        if (component < 4) {           
+            rotate([0,0,turn90])translate([component_side_offset, - component_up_offset, front_plate_thickness/2 + no_front_cutout])
+                cuboid([component_width + tolerance*2, component_height + tolerance*2, front_plate_thickness+1], $fn = 10);
+            if (component_wire_holes < 4){
+                rotate([0,0,turn90])
+                cut_power_wire_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_wire_holes,component_wire_diameter, component_90); 
+            }
+        }
+    }
+    // Making the plate
+    //====================================================================================
+    difference(){
+        translate([0, 0, front_plate_thickness/2])
+        
+        cuboid([rack_width, height, front_plate_thickness], rounding=4, edges=["Z"], $fn = 20); 
+        all_rack_holes(); 
+        keystone_front_cutout(keystones1,keystones1_side_offset,keystones1_up_offset,keystones1_num,keystones1_I_rotate,keystones1_spaceing, keystones1_vertical);
+        keystone_front_cutout(keystones2,keystones2_side_offset,keystones2_up_offset,keystones2_num,keystones2_I_rotate,keystones2_spaceing, keystones2_vertical);
+
+        //Cutout window in rack panel for componets. will need to change translates later Translate Mark
+        component_front_cutout(component1, component1_width, component1_height, component1_depth, component1_side_offset, component1_up_offset, component1_wire_holes, component1_wire_diameter, component1_90 );
+        component_front_cutout(component2, component2_width, component2_height, component2_depth, component2_side_offset, component2_up_offset, component2_wire_holes, component2_wire_diameter, component2_90 );
+        component_front_cutout(component3, component3_width, component3_height, component3_depth, component3_side_offset, component3_up_offset, component3_wire_holes, component3_wire_diameter, component3_90 );
     }
 }
-module insert_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
-    
+module insert_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes, component_side_windows) {
+  
   difference(){
     union(){
-      build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+      build_component_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
       build_lip(component_width, component_height, component_depth, component_side_offset, component_up_offset);
-    }
-  cut_zip_tie_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset);
-  cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
-  cut_side_windows(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_side_windows);
-  power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
+      }
+    cut_zip_tie_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+    cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+    cut_side_windows(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_side_windows);
+    cut_power_wire_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
   }
 }
-module shelf_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
+module shelf_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes, component_side_windows) {
+
   difference(){
     union(){
-      build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+      build_component_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
       build_stopper(component_width, component_height, component_depth, component_side_offset, component_up_offset);
     }
-  cut_top(component_width, component_height, component_depth, component_side_offset, component_up_offset);
-  cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
-  cut_side_windows(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_side_windows);
-  power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
-  }
-}
-module build_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
-  if(component==1){
-    insert_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows);
-  }
-  if(component==2){
-    shelf_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows);
+    cut_top(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+    cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+    cut_side_windows(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_side_windows);
+    cut_power_wire_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
   }
 }
 // Keystone_jack_group: used to make the ports used to hold keystone jacks. lets you put up to 10 jacks per group.
@@ -636,6 +480,19 @@ module keystone_jack_group(keystone_jack_group, keystone_jack_side_offset, keyst
         }      
     }
 }
+module build_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
+
+  turn90 = component_90 ? 90 : 0;
+  
+  if(component==1){
+    rotate([0,0,turn90])
+    insert_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes, component_side_windows);
+  }
+  if(component==2){
+    rotate([0,0,turn90])
+    shelf_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes, component_side_windows);
+  }
+}
 //***********************************Main Building Modules*********************************//
 //***********************************Final Building Modules*********************************//
 //  make_rack(): Main assembly - boolean structure
@@ -643,9 +500,8 @@ module make_rack(){
   union(){
     front_panel();
       build_mount(component1, component1_width, component1_height, component1_depth, component1_side_offset, component1_up_offset, component1_wire_holes, component1_wire_diameter, component1_air_holes, component1_90, component1_side_windows); 
-      //component_mount(component1, component1_width, component1_height, component1_depth, component1_side_offset, component1_up_offset, component1_wire_holes, component1_wire_diameter, component1_air_holes, component1_90, component1_side_windows);  
-      component_mount(component2, component2_width, component2_height, component2_depth, component2_side_offset, component2_up_offset, component2_wire_holes, component2_wire_diameter, component2_air_holes, component2_90, component2_side_windows);
-      component_mount(component3, component3_width, component3_height, component3_depth, component3_side_offset, component3_up_offset, component3_wire_holes, component3_wire_diameter, component3_air_holes, component3_90, component1_side_windows);
+      build_mount(component2, component2_width, component2_height, component2_depth, component2_side_offset, component2_up_offset, component2_wire_holes, component2_wire_diameter, component2_air_holes, component2_90, component2_side_windows);
+      build_mount(component3, component3_width, component3_height, component3_depth, component3_side_offset, component3_up_offset, component3_wire_holes, component3_wire_diameter, component3_air_holes, component3_90, component1_side_windows);
       keystone_jack_group(keystones1,keystones1_side_offset,keystones1_up_offset,keystones1_num,keystones1_I_rotate,keystones1_spaceing, keystones1_vertical);
       keystone_jack_group(keystones2,keystones2_side_offset,keystones2_up_offset,keystones2_num,keystones2_I_rotate,keystones2_spaceing, keystones2_vertical);
       }
