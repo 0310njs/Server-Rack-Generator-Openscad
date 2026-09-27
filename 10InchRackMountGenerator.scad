@@ -410,6 +410,14 @@ module cut_air_holes(component_width, component_height, component_depth, compone
     }
   }
 }
+module build_lip(component_width, component_height, component_depth, component_side_offset, component_up_offset){
+  if(front_lip){
+    difference() {
+      translate([component_side_offset, - component_up_offset, 0])
+        rect_tube(size=[component_width + tolerance*2,component_height + tolerance*2], wall=.6, h=.6, $fn = 10);
+    }
+  }
+}
 module component_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
     {//Varibles
     //6 inch racks (mounts=152.4mm; rails=15.875mm; usable space=120.65mm)
@@ -560,14 +568,25 @@ module component_mount(component, component_width, component_height, component_d
 }
 module insert_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
     
-    difference(){
-    build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
-    cut_zip_tie_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset);
-    cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+  difference(){
+    union(){
+      build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+      build_lip(component_width, component_height, component_depth, component_side_offset, component_up_offset);
     }
+  cut_zip_tie_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+  cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+  power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
+  }
 }
 module shelf_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
-  
+  difference(){
+    union(){
+      build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+      
+    }
+  cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+  power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
+  }
 }
 module build_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
   if(component==1){
