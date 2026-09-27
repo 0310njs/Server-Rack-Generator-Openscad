@@ -418,6 +418,11 @@ module build_lip(component_width, component_height, component_depth, component_s
     }
   }
 }
+module cut_top(component_width, component_height, component_depth, component_side_offset, component_up_offset){
+  no_front_cutout = front_plate_hole ? 0 : front_plate_thickness + tolerance;
+  translate([component_side_offset, - component_height/2 - component_up_offset - e, (component_depth + zip_tie_cutout_depth +  no_front_cutout)/2])
+    cube([component_width + (tolerance*2) ,case_thickness*2,component_depth + zip_tie_cutout_depth +  no_front_cutout], center = true);
+}
 module component_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
     {//Varibles
     //6 inch racks (mounts=152.4mm; rails=15.875mm; usable space=120.65mm)
@@ -584,6 +589,7 @@ module shelf_mount(component_width, component_height, component_depth, component
       build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
       
     }
+  cut_top(component_width, component_height, component_depth, component_side_offset, component_up_offset);
   cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
   power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
   }
