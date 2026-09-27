@@ -430,7 +430,15 @@ module build_stopper(component_width, component_height, component_depth, compone
   translate([component_side_offset + component_width/2+2, component_height/2 + case_thickness/2 - component_up_offset, component_depth + zip_tie_cutout_depth +  no_front_cutout-4.5])rotate([90,-90,0])
       wedge([3,stopper_size,stopper_size]);
 }
-//Cuts out a the sides of th mount when component_side_windows in true 
+//Cuts out the sides of the mount when component_side_windows in true
+module cut_side_windows(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_side_windows){
+  if(component_side_windows){
+    frame_offset = 8;
+    translate([component_side_offset, - component_up_offset, component_depth/2])
+      cube(([component_width + case_thickness*2 + e*2,component_height - frame_offset,component_depth - zip_tie_cutout_depth - frame_offset]), center = true);
+  }
+}
+ 
 module component_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
     {//Varibles
     //6 inch racks (mounts=152.4mm; rails=15.875mm; usable space=120.65mm)
@@ -588,6 +596,7 @@ module insert_mount(component_width, component_height, component_depth, componen
     }
   cut_zip_tie_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset);
   cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+  cut_side_windows(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_side_windows);
   power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
   }
 }
@@ -599,6 +608,7 @@ module shelf_mount(component_width, component_height, component_depth, component
     }
   cut_top(component_width, component_height, component_depth, component_side_offset, component_up_offset);
   cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+  cut_side_windows(component_width, component_height, component_depth, component_side_offset, component_up_offset, component_side_windows);
   power_wire_cutouts(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter);
   }
 }
