@@ -364,6 +364,52 @@ module build_componet_body(component_width, component_height, component_depth, c
     component_cutout();
   }
 }
+module cut_zip_tie_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset) {
+  no_front_cutout = front_plate_hole ? 0 : front_plate_thickness + tolerance;
+  // Zip tie holes
+  zip_z = component_depth + no_front_cutout + 2.5;
+  for (i = [0:zip_tie_hole_count - 1]) {
+      x_pos = (component_width)/2 + component_side_offset - (component_width/(zip_tie_hole_count + 1)) * (i+1);
+      translate([x_pos, - component_up_offset, zip_z]) {
+          cube([zip_tie_hole_width, height, zip_tie_hole_length], center = true);
+      }
+  }
+  // Zip tie indents (top and bottom)
+  x_pos = component_side_offset;
+  // Top indent
+  translate([x_pos, (- (component_height+(2*case_thickness))/2) + - component_up_offset, zip_z]) {
+      cube([component_width, zip_tie_indent_depth + e, zip_tie_cutout_depth + e], center = true);
+  }
+  // Bottom indent
+  translate([x_pos, ((component_height+(2*case_thickness))/2) + - component_up_offset, zip_z]) {
+      cube([component_width, zip_tie_indent_depth + e , zip_tie_cutout_depth + e], center = true);
+  }
+}
+module cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes){
+        
+  test_hex_fit_Y = (component_height + case_thickness*2) - ( hex_spacing + hex_bottom_frame*2);
+  test_hex_fit_x = (component_width + case_thickness*2) - ( hex_spacing + hex_bottom_frame*2);
+  test_hex_fit_z = (component_depth) - ( hex_spacing + hex_bottom_frame*2);        
+  
+  if(air_holes && test_hex_fit_z > 0){
+    translate([component_side_offset, - component_up_offset, component_depth/2]){
+      if(test_hex_fit_x >= 0){// cut hex hole from top and bottom
+        difference(){         
+          cuboid([component_width + case_thickness*2 + e*2, component_height + case_thickness*2 + e*2, component_depth],rounding=0,edges=["Z"], $fn = 10);
+          hex_panel([component_width + case_thickness*2 + e*2, component_depth, component_height + case_thickness*2 + e*2], hex_strut, hex_spacing, frame=hex_bottom_frame, orient=FRONT, $fn = 10); 
+        }
+      }
+      if (test_hex_fit_Y >= 0){//  cut hex holes form the sides
+        difference(){ 
+          rotate([90,0,0])
+            cuboid([component_width+ case_thickness*2 + e*2, component_depth, component_height + case_thickness*2 + e*2],rounding=0,edges=["Z"], $fn = 10);
+          rotate([90,0,0])
+            hex_panel([ component_height + case_thickness*2 + e*2, component_depth, component_width+ case_thickness*2 + e*2 ], hex_strut, hex_spacing, frame=hex_bottom_frame, orient=LEFT, $fn = 10);     
+        }
+      }
+    }
+  }
+}
 module component_mount(component, component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
     {//Varibles
     //6 inch racks (mounts=152.4mm; rails=15.875mm; usable space=120.65mm)
@@ -514,7 +560,11 @@ module component_mount(component, component_width, component_height, component_d
 }
 module insert_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
     
+    difference(){
     build_componet_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+    cut_zip_tie_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+    cut_air_holes(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes);
+    }
 }
 module shelf_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, front_wire_holes, component_wire_diameter, air_holes,component_90, component_side_windows) {
   
