@@ -106,13 +106,13 @@ hex_bottom_frame = 10;  // [8:0.5:13]
 //============================================================================================
 /* [Drawer Handle Settings] */
 //Length from top of the drawer to the bottom of the handle.
-handle_height = 7;
+handle_height = 15;
 //Length from side of the handle to the other side of it.
 handle_width = 20;
 //Radius of the bottom inner corners of the handle.
-handle_bottom_fillet = 3;
+handle_bottom_fillet = 5;
 //The top corners of the handle is based on handle_height and handle_bottom_fillet. This limits how big it can get.
-limit_fillet = 6;
+limit_fillet = 8;
 //============================================================================================
 /* [Advanced] */
 // Used when rack_height is a fraction, cuts a half oval for screws, otherwise will cover up the hole
@@ -370,22 +370,22 @@ module build_drawer_body(component_width, component_height, component_depth, com
   //used to make a cube to be cut up.
   module build_body(){
     translate([component_side_offset,- component_up_offset, (component_depth + lip_offset)/2])
-      cuboid([component_width - (tolerance*2), component_height - (tolerance*2), component_depth + lip_offset], chamfer = 2, edges=[TOP+BACK], $fn = 20);
+      cuboid([component_width - (tolerance/2), component_height - (tolerance), component_depth + lip_offset], chamfer = 2, edges=[TOP+BACK], $fn = 20);
   }
   // used to create cutout for the drawer
   module cut_drawer_cutout(){
     translate([component_side_offset, - component_up_offset - drawer_wall_thickness,(component_depth + lip_offset)/2]) 
-    cuboid([component_width - (2 * tolerance) - (drawer_wall_thickness*2), component_height - (2 * tolerance), component_depth - lip_offset - (drawer_wall_thickness*2)], rounding = component_height*.3, edges=[TOP+BACK], $fn = 20);
-    translate([0,-(component_height/2)+((component_height*.2)/2) + tolerance-e, component_depth/2 + (component_depth*.3)/2-drawer_wall_thickness])
+    cuboid([component_width - (tolerance/2) - (drawer_wall_thickness*2), component_height - (tolerance), component_depth - lip_offset - (drawer_wall_thickness*2)], rounding = component_height*.3, edges=[TOP+BACK], $fn = 20);
+    translate([0,-(component_height/2)+(((component_height*.2)+ tolerance)/2) -e, component_depth/2 + (component_depth*.3)/2-drawer_wall_thickness])
       cuboid([component_width,(component_height*.2),(component_depth*.7)], chamfer = (component_height*.2), edges=[BOTTOM+BACK]);
   }
   //used to make a cut in the drawer main body to be used as a handle.
   module cut_drawer_handle(){
-    translate([0,-(component_height/2)+(handle_height/2) + tolerance-e, (drawer_wall_thickness + lip_offset)/2 ])
+    translate([component_side_offset,-component_up_offset-(component_height/2) + ((handle_height+ tolerance)/2) -e, (drawer_wall_thickness + lip_offset)/2 ])
       cuboid([handle_width, handle_height, drawer_wall_thickness + lip_offset+e], rounding = handle_bottom_fillet, edges=[LEFT+BACK, RIGHT+BACK], $fn = 40);
-    translate([handle_width/2,-(component_height/2) + tolerance-e, (drawer_wall_thickness + lip_offset)/2])
+    translate([component_side_offset + handle_width/2,-component_up_offset-((component_height+ tolerance)/2) -e, (drawer_wall_thickness + lip_offset)/2])
       fillet(l=drawer_wall_thickness + lip_offset+e, r=handle_top_fillet, ang=90, $fn = 40);
-    translate([-handle_width/2,-(component_height/2) + tolerance-e, (drawer_wall_thickness + lip_offset)/2])
+    translate([component_side_offset - handle_width/2,-component_up_offset-((component_height+ tolerance)/2)-e, (drawer_wall_thickness + lip_offset)/2])
     rotate([0,180,0])
       fillet(l=drawer_wall_thickness + lip_offset+e, r=handle_top_fillet, ang=90, $fn = 40);
   }
@@ -401,9 +401,9 @@ module build_drawer_stops(component_width, component_height, component_depth, co
   size_check = component_height*.20;
   stop_size = size_check >= 4 ? 4 : component_height*.20;
   
-  translate([((component_width + tolerance*2)/2)-(stop_size/2), -((component_height + tolerance*2)/2)+(stop_size/2), (component_depth*.3) + (stop_size*.4)])
+  translate([component_side_offset+((component_width + tolerance*2)/2)-(stop_size/2),-component_up_offset -((component_height + tolerance*2)/2)+(stop_size/2), (component_depth*.3) + (stop_size*.4)])
     cuboid([ stop_size, stop_size, stop_size*2], chamfer = stop_size, edges=[BOTTOM+BACK]);
-  translate([-((component_width + tolerance*2)/2)+(stop_size/2), -((component_height + tolerance*2)/2)+(stop_size/2), (component_depth*.3) + (stop_size*.4)])
+  translate([component_side_offset-((component_width + tolerance*2)/2)+(stop_size/2), -component_up_offset-((component_height + tolerance*2)/2)+(stop_size/2), (component_depth*.3) + (stop_size*.4)])
     cuboid([ stop_size, stop_size, stop_size*2], chamfer = stop_size, edges=[BOTTOM+BACK]);
 }
 }
@@ -578,10 +578,9 @@ module shelf_mount(component_width, component_height, component_depth, component
 
 // Builds a mount with a drawer in it.
 module drawer_mount(component_width, component_height, component_depth, component_side_offset, component_up_offset, air_holes, component_side_windows) {
-  
   difference(){
     union(){
-      //build_component_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
+      build_component_body(component_width, component_height, component_depth, component_side_offset, component_up_offset);
       build_ext_component_body(component_width, component_height, component_depth, component_side_offset, component_up_offset, 3.4);
       build_drawer_stops(component_width, component_height, component_depth, component_side_offset, component_up_offset);
       build_stopper(component_width, component_height, component_depth, component_side_offset, component_up_offset);
