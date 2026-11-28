@@ -118,7 +118,7 @@ limit_fillet = 8;
 // Used when rack_height is a fraction, cuts a half oval for screws, otherwise will cover up the hole
 half_height_holes = true; // [true:Show partial holes at edges, false:Hide partial holes]
 // Thickness of the shell that wraps around the part.
-case_thickness = 6; // Thickness of case walls
+case_thickness = 6; // Thickness of case walls that hold the component or drawer.
 // Make the front plate solid (no hole), useful to hide a part not needing to be accessed from the exterior.
 front_plate_hole = true; // [true:Show front plate hole, false:Solid front plate]
 // Prevent part from sliding out the front by adding a small 0.6mm lip around the front plate hole.
@@ -150,13 +150,14 @@ e=0.01;
 {// General Modules
 // Makes a temp red rail on both sides of the mounting plate to show rec placement limit for component mounts.
 module guide_rails(){
-    
-    translate([-105, 0, 2.9])
-    color("red")
-    cuboid([3, height, 6], chamfer=1, edges=["ALL"], $fn = 5);
-    translate([105, 0, 2.9])
-    color("red")
-    cuboid([3, height, 6], chamfer=1, edges=["ALL"], $fn = 5);
+    if(rack_width == 254.0){
+      translate([-105, 0, 2.9])
+        color("red")
+          cuboid([3, height, 6], chamfer=1, edges=["ALL"], $fn = 5);
+      translate([105, 0, 2.9])
+        color("red")
+          cuboid([3, height, 6], chamfer=1, edges=["ALL"], $fn = 5);
+    }
 }
 
 // Builds one keystonejack mounting hole.
@@ -634,7 +635,7 @@ module make_rack(){
     front_panel();
       build_mount(component1, component1_width, component1_height, component1_depth, component1_side_offset, component1_up_offset, component1_wire_holes, component1_wire_diameter, component1_air_holes, component1_90, component1_side_windows); 
       build_mount(component2, component2_width, component2_height, component2_depth, component2_side_offset, component2_up_offset, component2_wire_holes, component2_wire_diameter, component2_air_holes, component2_90, component2_side_windows);
-      build_mount(component3, component3_width, component3_height, component3_depth, component3_side_offset, component3_up_offset, component3_wire_holes, component3_wire_diameter, component3_air_holes, component3_90, component1_side_windows);
+      build_mount(component3, component3_width, component3_height, component3_depth, component3_side_offset, component3_up_offset, component3_wire_holes, component3_wire_diameter, component3_air_holes, component3_90, component3_side_windows);
       keystone_jack_group(keystones1,keystones1_side_offset,keystones1_up_offset,keystones1_num,keystones1_I_rotate,keystones1_spaceing, keystones1_vertical);
       keystone_jack_group(keystones2,keystones2_side_offset,keystones2_up_offset,keystones2_num,keystones2_I_rotate,keystones2_spaceing, keystones2_vertical);
       }
