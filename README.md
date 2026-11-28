@@ -15,6 +15,9 @@
 
 Opescad files that can be used to make(3D Print) a whole 10in server rack from frame to mounts. Also some options for 6in racks.
 
+![](https://github.com/user-attachments/assets/c38df7a7-e703-4288-b89a-552766192051)
+
+
 ## ⚡ Quick Start
 
 Head to Maker World to use the files without any CAD programs
